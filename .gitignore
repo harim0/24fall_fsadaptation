@@ -1,5 +1,5 @@
-ai_finalproject/data/*
-ai_finalproject/CoOp/cache/*
-ai_finalproject/fine_tuning_11.py
-ai_finalproject/CoOp/output/*
-ai_finalproject/CoOp/pretrained/*
+./data/*
+./CoOp/cache/*
+./fine_tuning_11.py
+./CoOp/output/*
+./CoOp/pretrained/*
