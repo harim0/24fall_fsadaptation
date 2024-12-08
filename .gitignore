@@ -1,5 +1,10 @@
-./data/*
-./CoOp/cache/*
-./fine_tuning_11.py
-./CoOp/output/*
-./CoOp/pretrained/*
+data/*
+CoOp/cache/*
+fine_tuning_11.py
+CoOp/output/*
+CoOp/pretrained/
+CoOp/pretrained/*
+*.pth.tar-50
+checkpoint
+log.txt
+*/tensorboard
