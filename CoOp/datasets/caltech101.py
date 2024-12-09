@@ -8,6 +8,8 @@ from .oxford_pets import OxfordPets
 from .dtd import DescribableTextures as DTD
 
 IGNORED = ["BACKGROUND_Google", "Faces_easy"]
+
+
 NEW_CNAMES = {
     "airplanes": "airplane",
     "Faces": "face",
@@ -16,9 +18,138 @@ NEW_CNAMES = {
 }
 
 
+
 @DATASET_REGISTRY.register()
 class Caltech101(DatasetBase):
+    SUPERCLASS_MAPPING = {
+    "ant": "animal",
+    "beaver": "animal",
+    "cougar_body": "animal",
+    "cougar_face": "animal",
+    "crab": "animal",
+    "crayfish": "animal",
+    "crocodile": "animal",
+    "crocodile_head": "animal",
+    "dalmatian": "animal",
+    "dolphin": "animal",
+    "elephant": "animal",
+    "gerenuk": "animal",
+    "hedgehog": "animal",
+    "leopard": "animal",
+    "hawksbill": "animal",
+    "garfield": "animal",
+    "bonsai": "plant",
+    "face": "animal",
+    "brain": "animal",
+    "brontosaurus": "animal",
+    
+    
+    "airplane": "vehicle",
+    "motorbike": "vehicle",
+    "car_side": "vehicle",
+    "ferry": "vehicle",
+    "helicopter": "vehicle",
+    
+    "anchor": "object",
+    "barrel": "object",
+    "binocular": "object",
+    "chair": "object",
+    "cup": "object",
+    "dollar_bill": "object",
+    "cannon": "object",
+    "ceiling_fan": "object",
+    
+    "camera": "device",
+    "cellphone": "device",
+    "gramophone": "device",
+    "headphone": "device",
+    
+    "accordion": "instrument",
+    "bass": "instrument",
+    "electric_guitar": "instrument",
+    "euphonium": "instrument",
+    "grand_piano": "instrument",
+    
+    "emu": "bird",
+    "flamingo": "bird",
+    "flamingo_head": "bird",
+    
+    "butterfly": "insect",
+    "dragonfly": "insect",
+    
+    "ewer": "sculpture",
+    "chandelier": "sculpture",
+    "buddha": "sculpture",
+    
+    "rhino": "animal",
+    "rooster": "animal",
+    "scorpion": "animal",
+    "panda": "animal",
+    "octopus": "animal",
+    "platypus": "animal",
+    "llama": "animal",
+    "kangaroo": "animal",
+    "wild_cat": "animal",
+    "okapi": "animal",
+    "sea_horse": "animal",
+    "starfish": "animal",
+    "stegosaurus": "animal",
+    "lobster": "animal",
+    "trilobite": "animal",
 
+    # Bird
+    "ibis": "bird",
+    "pigeon": "bird",
+
+    # Plant
+    "water_lilly": "plant",
+    "sunflower": "plant",
+    "lotus": "plant",
+    "joshua_tree": "plant",
+    "strawberry": "plant",
+
+    # Insect
+    "mayfly": "insect",
+    "tick": "insect",
+
+    # Vehicle
+    "ketch": "vehicle",
+    "schooner": "vehicle",
+    "wheelchair": "vehicle",
+    "inline_skate": "vehicle",
+
+    # Object
+    "stapler": "object",
+    "menorah": "object",
+    "stop_sign": "object",
+    "pizza": "object",
+    "umbrella": "object",
+    "wrench": "object",
+    "revolver": "object",
+    "scissors": "object",
+    "pagoda": "object",
+    "pyramid": "object",
+    "lamp": "object",
+    "soccer_ball": "object",
+    "windsor_chair": "object",
+
+    # Device
+    "laptop": "device",
+    "watch": "device",
+
+    # Instrument
+    "mandolin": "instrument",
+    "saxophone": "instrument",
+    "metronome": "instrument",
+
+    # Sculpture
+    "yin_yang": "sculpture",
+    "nautilus": "sculpture",
+    "snoopy": "sculpture",
+    "minaret": "sculpture"
+    
+    }
+    
     dataset_dir = "caltech-101"
 
     def __init__(self, cfg):
@@ -57,3 +188,8 @@ class Caltech101(DatasetBase):
         train, val, test = OxfordPets.subsample_classes(train, val, test, subsample=subsample)
 
         super().__init__(train_x=train, val=val, test=test)
+        
+    def __getitem__(self, index):
+        item = super().__getitem__(index)
+        superclass = self.SUPERCLASS_MAPPING.get(item.classname, "object")
+        return item._replace(superclass=superclass)

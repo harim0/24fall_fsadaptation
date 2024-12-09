@@ -6,21 +6,19 @@ cd ../..
 DATA=/home/harim/data/cocoop_dataset
 TRAINER=CoCoOp_Prompt
 TRAIN=CoCoOp
-# TRAINER=CoOp
 
 DATASET=$1
 SEED=$2
 
 CFG=vit_b16_c4_ep10_batch1_ctxv1_prompt
-# CFG=vit_b16_ctxv1  # uncomment this when TRAINER=CoOp
 SHOTS=16
 LOADEP=10
 SUB=new
 
 
 COMMON_DIR=${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
-MODEL_DIR=output/base2new_prompt/train_base/${COMMON_DIR}
-DIR=output/base2new_prompt/test_${SUB}/${COMMON_DIR}
+MODEL_DIR=output/base2new/train_base/${COMMON_DIR}
+DIR=output/base2new/test_${SUB}/${COMMON_DIR}
 if [ -d "$DIR" ]; then
     echo "Oops! The results exist at ${DIR} (so skip this job)"
 else

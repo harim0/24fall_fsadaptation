@@ -10,6 +10,68 @@ from .oxford_pets import OxfordPets
 
 @DATASET_REGISTRY.register()
 class DescribableTextures(DatasetBase):
+    SUPERCLASS_MAPPING = {
+        "banded": "pattern",
+        "blotchy": "pattern",
+        "chequered": "pattern",
+        "dotted": "pattern",
+        "flecked": "pattern",
+        "freckled": "pattern",
+        "interlaced": "pattern",
+        "lined": "pattern",
+        "marbled": "pattern",
+        
+        "honeycombed": "organic",
+        "cobwebbed": "organic",
+        "fibrous": "organic",
+        
+        "crosshatched": "geometric",
+        "grid": "geometric",
+        
+        "braided": "material",
+        "crystalline": "material",
+        "frilly": "material",
+        "gauzy": "material",
+        "knitted": "material",
+        "lacelike": "material",
+        
+        "bumpy": "texture",
+        "grooved": "texture",
+        "bubbly": "texture",
+        "cracked": "texture",
+        # Pattern
+        "spiralled": "pattern",
+        "polka-dotted": "pattern",
+        "striped": "pattern",
+        "sprinkled": "pattern",
+        "zigzagged": "pattern",
+        "paisley": "pattern",
+
+        # Organic
+        "veined": "organic",
+        "porous": "organic",
+        "scaly": "organic",
+
+        # Geometric
+        "meshed": "geometric",
+        "perforated": "geometric",
+
+        # Material
+        "woven": "material",
+        "pleated": "material",
+        "waffled": "material",
+        "studded": "material",
+
+        # Texture
+        "wrinkled": "texture",
+        "stained": "texture",
+        "matted": "texture",
+        "smeared": "texture",
+        "pitted": "texture",
+        "potholed": "texture",
+        "swirly": "texture",
+        "stratified": "texture",
+    }
 
     dataset_dir = "dtd"
 
@@ -49,6 +111,11 @@ class DescribableTextures(DatasetBase):
         train, val, test = OxfordPets.subsample_classes(train, val, test, subsample=subsample)
 
         super().__init__(train_x=train, val=val, test=test)
+        
+    def __getitem__(self, index):
+        item = super().__getitem__(index)
+        superclass = self.SUPERCLASS_MAPPING.get(item.classname, "texture")
+        return item._replace(superclass=superclass)
 
     @staticmethod
     def read_and_split_data(image_dir, p_trn=0.5, p_val=0.2, ignored=[], new_cnames=None):

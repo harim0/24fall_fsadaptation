@@ -7,9 +7,48 @@ from collections import defaultdict
 from dassl.data.datasets import DATASET_REGISTRY, Datum, DatasetBase
 from dassl.utils import read_json, write_json, mkdir_if_missing
 
-
 @DATASET_REGISTRY.register()
 class OxfordPets(DatasetBase):
+
+    SUPERCLASS_MAPPING = {
+        "abyssinian": "short-haired cat",
+        "bengal": "short-haired cat",
+        "bombay": "short-haired cat",
+        "british_shorthair": "short-haired cat",
+        "egyptian_mau": "short-haired cat",
+        "birman": "long-haired cat",
+        "chihuahua": "small dog",
+        "havanese": "small dog",
+        "japanese_chin": "small dog",
+        "american_pit_bull_terrier": "medium dog",
+        "beagle": "medium dog",
+        "english_cocker_spaniel": "medium dog",
+        "english_setter": "medium dog",
+        "keeshond": "medium dog",
+        "american_bulldog": "large dog",
+        "basset_hound": "large dog",
+        "boxer": "large dog",
+        "german_shorthaired": "large dog",
+        "great_pyrenees": "large dog",
+        "shiba_inu": "medium dog",
+    "persian": "long-haired cat",
+    "leonberger": "large dog",
+    "pug": "small dog",
+    "miniature_pinscher": "small dog",
+    "siamese": "short-haired cat",
+    "staffordshire_bull_terrier": "medium dog",
+    "newfoundland": "large dog",
+    "pomeranian": "small dog",
+    "scottish_terrier": "small dog",
+    "ragdoll": "long-haired cat",
+    "yorkshire_terrier": "small dog",
+    "wheaten_terrier": "medium dog",
+    "saint_bernard": "large dog",
+    "maine_coon": "long-haired cat",
+    "russian_blue": "short-haired cat",
+    "sphynx": "short-haired cat",
+    "samoyed": "large dog"
+    }
 
     dataset_dir = "oxford_pets"
 
@@ -52,7 +91,12 @@ class OxfordPets(DatasetBase):
         train, val, test = self.subsample_classes(train, val, test, subsample=subsample)
 
         super().__init__(train_x=train, val=val, test=test)
-
+        
+    def __getitem__(self, index):
+        item = super().__getitem__(index)
+        superclass = self.SUPERCLASS_MAPPING.get(item.classname, "pet")
+        return item._replace(superclass=superclass)
+    
     def read_data(self, split_file):
         filepath = os.path.join(self.anno_dir, split_file)
         items = []

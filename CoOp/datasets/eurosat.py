@@ -7,6 +7,7 @@ from dassl.utils import mkdir_if_missing
 from .oxford_pets import OxfordPets
 from .dtd import DescribableTextures as DTD
 
+
 NEW_CNAMES = {
     "AnnualCrop": "Annual Crop Land",
     "Forest": "Forest",
@@ -23,6 +24,25 @@ NEW_CNAMES = {
 
 @DATASET_REGISTRY.register()
 class EuroSAT(DatasetBase):
+    SUPERCLASS_MAPPING = {
+        "Highway or Road": "man-made",
+        "Industrial Buildings": "man-made",
+        
+        "Annual Crop Land": "agriculture",
+        
+        "Forest": "natural",
+        "Herbaceous Vegetation Land": "natural",
+        
+        "River": "natural",
+        "Sea or Lake": "natural",
+
+        # Agriculture
+        "Pasture Land": "agriculture",
+        "Permanent Crop Land": "agriculture",
+
+        # Man-Made
+        "Residential Buildings": "man-made",
+    }
 
     dataset_dir = "eurosat"
 
@@ -62,6 +82,11 @@ class EuroSAT(DatasetBase):
         train, val, test = OxfordPets.subsample_classes(train, val, test, subsample=subsample)
 
         super().__init__(train_x=train, val=val, test=test)
+        
+    def __getitem__(self, index):
+        item = super().__getitem__(index)
+        superclass = self.SUPERCLASS_MAPPING.get(item.classname, "landcover")
+        return item._replace(superclass=superclass)
 
     def update_classname(self, dataset_old):
         dataset_new = []

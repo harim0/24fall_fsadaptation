@@ -7,9 +7,111 @@ from dassl.utils import mkdir_if_missing
 
 from .oxford_pets import OxfordPets
 
-
 @DATASET_REGISTRY.register()
 class UCF101(DatasetBase):
+    SUPERCLASS_MAPPING = {
+        "Archery": "sport",
+        "Basketball": "sport",
+        "Basketball_Dunk": "sport",
+        "Baseball_Pitch": "sport",
+        "Bowling": "sport",
+        "Cricket_Bowling": "sport",
+        "Cricket_Shot": "sport",
+        "Field_Hockey_Penalty": "sport",
+        "Floor_Gymnastics": "sport",
+        "Golf_Swing": "sport",
+        "Hammer_Throw": "sport",
+        "High_Jump": "sport",
+        "Horse_Race": "sport",
+        "Javelin_Throw": "sport",
+        "Long_Jump": "sport",
+        "Fencing": "sport",
+        "Biking": "sport",
+        "Bench_Press": "fitness",
+        "Body_Weight_Squats": "fitness",
+        "Boxing_Punching_Bag": "fitness",
+        "Boxing_Speed_Bag": "fitness",
+        "Clean_And_Jerk": "fitness",
+        "Handstand_Pushups": "fitness",
+        "Handstand_Walking": "fitness",
+        "Jump_Rope": "fitness",
+        "Jumping_Jack": "fitness",
+        "Baby_Crawling": "recreation",
+        "Cliff_Diving": "recreation",
+        "Frisbee_Catch": "recreation",
+        "Horse_Riding": "recreation",
+        "Hula_Hoop": "recreation",
+        "Band_Marching": "performance",
+        "Drumming": "performance",
+        "Juggling_Balls": "performance",
+        "Apply_Lipstick": "personal care",
+        "Apply_Eye_Makeup": "personal care",
+        "Blow_Dry_Hair": "personal care",
+        "Brushing_Teeth": "personal care",
+        "Haircut": "personal care",
+        "Head_Massage": "personal care",
+        "Breast_Stroke": "water sport",
+        "Front_Crawl": "water sport",
+        "Kayaking": "water sport",
+        "Knitting": "creative activity",
+        "Cutting_In_Kitchen": "household activity",
+        "Ice_Dancing": "recreation",
+        "Hammering": "other",
+        "Billiards": "recreation",
+        "Blowing_Candles": "other",
+        "Diving": "recreation",
+        "Balance_Beam": "sport",
+        "Surfing": "water sport",
+    "Wall_Pushups": "fitness",
+    "Punch": "fitness",
+    "Writing_On_Board": "creative activity",
+    "Pull_Ups": "fitness",
+    "Salsa_Spin": "performance",
+    "Playing_Violin": "performance",
+    "Still_Rings": "sport",
+    "Rope_Climbing": "fitness",
+    "Skiing": "recreation",
+    "Skijet": "water sport",
+    "Sky_Diving": "recreation",
+    "Mixing": "creative activity",
+    "Playing_Piano": "performance",
+    "Yo_Yo": "recreation",
+    "Playing_Sitar": "performance",
+    "Rafting": "water sport",
+    "Soccer_Juggling": "sport",
+    "Pizza_Tossing": "household activity",
+    "Tai_Chi": "fitness",
+    "Volleyball_Spiking": "sport",
+    "Push_Ups": "fitness",
+    "Skate_Boarding": "recreation",
+    "Playing_Cello": "performance",
+    "Uneven_Bars": "sport",
+    "Trampoline_Jumping": "recreation",
+    "Nunchucks": "recreation",
+    "Rowing": "water sport",
+    "Table_Tennis_Shot": "sport",
+    "Playing_Dhol": "performance",
+    "Throw_Discus": "sport",
+    "Playing_Tabla": "performance",
+    "Shaving_Beard": "personal care",
+    "Typing": "creative activity",
+    "Soccer_Penalty": "sport",
+    "Mopping_Floor": "household activity",
+    "Walking_With_Dog": "recreation",
+    "Parallel_Bars": "sport",
+    "Playing_Daf": "performance",
+    "Swing": "recreation",
+    "Rock_Climbing_Indoor": "recreation",
+    "Military_Parade": "performance",
+    "Pommel_Horse": "sport",
+    "Shotput": "sport",
+    "Playing_Guitar": "performance",
+    "Pole_Vault": "sport",
+    "Tennis_Swing": "sport",
+    "Lunges": "fitness",
+    "Sumo_Wrestling": "sport",
+    "Playing_Flute": "performance"
+    }
 
     dataset_dir = "ucf101"
 
@@ -61,6 +163,11 @@ class UCF101(DatasetBase):
 
         super().__init__(train_x=train, val=val, test=test)
 
+    def __getitem__(self, index):
+        item = super().__getitem__(index)
+        superclass = self.SUPERCLASS_MAPPING.get(item.classname, "action")
+        return item._replace(superclass=superclass)
+    
     def read_data(self, cname2lab, text_file):
         text_file = os.path.join(self.dataset_dir, text_file)
         items = []
