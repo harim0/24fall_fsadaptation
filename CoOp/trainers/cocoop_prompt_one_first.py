@@ -122,18 +122,12 @@ class PromptLearner(nn.Module):
     def __init__(self, cfg, classnames, superclass_mapping, clip_model):
         super().__init__()
         n_cls = len(classnames)
-        n_ctx = cfg.TRAINER.COCOOP_PROMPT2.N_CTX
-        ctx_init = cfg.TRAINER.COCOOP_PROMPT2.CTX_INIT
-        ctx_mid = cfg.TRAINER.COCOOP_PROMPT2.CTX_MID
+        n_ctx = cfg.TRAINER.COCOOP_PROMPT.N_CTX
+        ctx_init = cfg.TRAINER.COCOOP_PROMPT.CTX_INIT
+        ctx_mid = cfg.TRAINER.COCOOP_PROMPT.CTX_MID
         dtype = clip_model.dtype
         ctx_dim = clip_model.ln_final.weight.shape[0]
         vis_dim = clip_model.visual.output_dim
-        
-        
-        self.superclasses = list(set(superclass_mapping.values()))  # Superclass 리스트 생성
-        self.superclass_to_id = {sc: i for i, sc in enumerate(self.superclasses)}  # Superclass ID 매핑
-        self.superclass_embeddings = nn.Embedding(len(self.superclasses), ctx_dim)  # Superclass-specific embedding
-
         
         if ctx_init:
             ctx_init = ctx_init.replace("_", " ")
@@ -148,13 +142,16 @@ class PromptLearner(nn.Module):
             nn.init.normal_(ctx1_vectors, std=0.02)
 
         self.ctx1 = nn.Parameter(ctx1_vectors)
+        # ctx2_vectors = torch.empty(n_ctx, ctx_dim, dtype=dtype)
+        # nn.init.normal_(ctx2_vectors, std=0.02)
+        # self.ctx2 = nn.Parameter(ctx2_vectors)
         
         self.meta_net = nn.Sequential(OrderedDict([
             ("linear1", nn.Linear(vis_dim, vis_dim // 16)),
             ("relu", nn.ReLU(inplace=True)),
             ("linear2", nn.Linear(vis_dim // 16, ctx_dim))
         ]))
-        if cfg.TRAINER.COCOOP_PROMPT2.PREC == "fp16":
+        if cfg.TRAINER.COCOOP_PROMPT.PREC == "fp16":
             self.meta_net.half()
 
         classnames = [name.replace("_", " ") for name in classnames]
@@ -186,21 +183,13 @@ class PromptLearner(nn.Module):
         self.n_ctx = n_ctx
         self.tokenized_prompts = tokenized_prompts  # torch.Tensor
         self.name_lens = name_lens
-        
-    def get_superclass_id(self, class_name):
-        return self.superclass_to_id[self.superclass_mapping[class_name]]
     
+    # def construct_prompts(self, ctx1, ctx2, prefix, midfix, suffix, label=None):
     def construct_prompts(self, ctx1, prefix, midfix, suffix, label=None):
         if label is not None:
             prefix = prefix[label]
             midfix = midfix[label]
             suffix = suffix[label]
-        
-            # Superclass-specific embedding 추가
-            superclass_ids = torch.tensor([self.get_superclass_id(self.classnames[l]) for l in label])
-            superclass_embeds = self.superclass_embeddings(superclass_ids).unsqueeze(1)  # (batch, 1, ctx_dim)
-
-            midfix = midfix + superclass_embeds
         
         # print(f"prefix size: {prefix.size()}") #  torch.Size([9, 1, 512])
         # print(f"ctx1 size: {ctx1.size()}") # torch.Size([50, 4, 512]
@@ -217,6 +206,7 @@ class PromptLearner(nn.Module):
                 prefix,  # (dim0, 1, dim)
                 ctx1,     # (dim0, n_ctx, dim)
                 midfix,
+                # ctx2,
                 suffix,  # (dim0, *, dim)
             ],
             dim=1,
@@ -229,11 +219,21 @@ class PromptLearner(nn.Module):
         midfix = self.token_midfix
         suffix = self.token_suffix
         ctx1 = self.ctx1                     # (n_ctx, ctx_dim)
+        # ctx2 = self.ctx2                     # (n_ctx, ctx_dim)
         bias = self.meta_net(im_features)  # (batch, ctx_dim)
         bias = bias.unsqueeze(1)           # (batch, 1, ctx_dim)
         ctx1 = ctx1.unsqueeze(0)             # (1, n_ctx1, ctx1_dim)
+        # ctx2 = ctx2.unsqueeze(0)             # (1, n_ctx2, ctx2_dim)
         ctx1_shifted = ctx1 + bias           # (batch, n_ctx, ctx_dim)
+        # ctx2_shifted = ctx2 + bias           # (batch, n_ctx, ctx_dim)
+        
+        # Use instance-conditioned context tokens for all classes
         prompts = []
+        # for ctx1_shifted_i, ctx2_shifted_i in zip(ctx1_shifted, ctx2_shifted):
+        #     ctx1_i = ctx1_shifted_i.unsqueeze(0).expand(self.n_cls, -1, -1)
+        #     ctx2_i = ctx2_shifted_i.unsqueeze(0).expand(self.n_cls, -1, -1)
+        #     pts_i = self.construct_prompts(ctx1_i, ctx2_i, prefix, midfix, suffix)
+        #     prompts.append(pts_i)
         for ctx_shifted_i in ctx1_shifted:
             ctx_i = ctx_shifted_i.unsqueeze(0).expand(self.n_cls, -1, -1)
             pts_i = self.construct_prompts(ctx_i, prefix, midfix, suffix)  # (n_cls, n_tkn, ctx_dim)
@@ -262,31 +262,26 @@ class CustomCLIP(nn.Module):
 
         prompts = self.prompt_learner(image_features)
         
-        logits_class = []
-        logits_superclass = []
+        logits = []
         for pts_i, imf_i in zip(prompts, image_features):
             text_features = self.text_encoder(pts_i, tokenized_prompts)
             text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-            logits_class.append(logit_scale * imf_i @ text_features.t())
-
-            superclass_logits = logit_scale * imf_i.float() @ self.prompt_learner.superclass_embeddings.weight.t()
-            logits_superclass.append(superclass_logits)
-            
-        logits_class = torch.stack(logits_class)
-        logits_superclass = torch.stack(logits_superclass)
+            l_i = logit_scale * imf_i @ text_features.t()
+            logits.append(l_i)
+        logits = torch.stack(logits)
         
         if self.prompt_learner.training:
-            loss_class = F.cross_entropy(logits_class, label) if label is not None else 0
-            loss_superclass = F.cross_entropy(logits_superclass, superclass_label)
-            alpha = 0.5  
-            loss = loss_class + alpha * loss_superclass
+            loss_class = F.cross_entropy(logits, label) if label is not None else 0
+            loss_superclass = F.cross_entropy(logits, superclass_label)
+            alpha = 0.5
+            loss = loss_class + loss_superclass*alpha
             return loss
 
-        return logits_class
+        return logits
 
 
 @TRAINER_REGISTRY.register()
-class CoCoOp_Prompt2(TrainerX):
+class CoCoOp_Prompt_One(TrainerX):
     def __init__(self, cfg, rank, world_size):
         super().__init__(cfg, rank, world_size)
         assert self.rank is not None, "\t\tRank is not set properly in CoCoOp_Prototype"
@@ -295,7 +290,7 @@ class CoCoOp_Prompt2(TrainerX):
         self.device = torch.device(f"cuda:{rank}")
         
     def check_cfg(self, cfg):
-        assert cfg.TRAINER.COCOOP_PROMPT2.PREC in ["fp16", "fp32", "amp"]
+        assert cfg.TRAINER.COCOOP_PROMPT.PREC in ["fp16", "fp32", "amp"]
         
     def build_data_loader(self):
         cfg = self.cfg
@@ -347,14 +342,14 @@ class CoCoOp_Prompt2(TrainerX):
         # comparison_result = train_dataset.compare_classnames_and_superclass_keys()
         # print("\t\tClassnames but not in superclass keys:", comparison_result["missing_in_superclass"])
         # print("len = ",len(comparison_result["missing_in_superclass"]))
-        # print()
-        # comparison_result = test_dataset.compare_classnames_and_superclass_keys()
-        # print("\t\tClassnames but not in superclass keys:", comparison_result["missing_in_superclass"])
-        # print("len = ",len(comparison_result["missing_in_superclass"]))
-        # print("\t\tSuperclass keys but not in classnames:", comparison_result["missing_in_classnames"])
-        # print("len= ",len(comparison_result["missing_in_classnames"]))
-        # print()
-        # print()
+        print()
+        comparison_result = test_dataset.compare_classnames_and_superclass_keys()
+        print("\t\tClassnames but not in superclass keys:", comparison_result["missing_in_superclass"])
+        print("len = ",len(comparison_result["missing_in_superclass"]))
+        print("\t\tSuperclass keys but not in classnames:", comparison_result["missing_in_classnames"])
+        print("len= ",len(comparison_result["missing_in_classnames"]))
+        print()
+        print()
 
         train_sampler = DistributedSampler(
             train_dataset,
@@ -397,7 +392,7 @@ class CoCoOp_Prompt2(TrainerX):
         print(f"Loading CLIP (backbone: {cfg.MODEL.BACKBONE.NAME})")
         clip_model = load_clip_to_cpu(cfg)
         
-        if cfg.TRAINER.COCOOP_PROMPT2.PREC == "fp32" or cfg.TRAINER.COCOOP_PROMPT2.PREC == "amp":
+        if cfg.TRAINER.COCOOP_PROMPT.PREC == "fp32" or cfg.TRAINER.COCOOP_PROMPT.PREC == "amp":
             # CLIP's default precision is fp16
             clip_model.float()
 
@@ -427,7 +422,7 @@ class CoCoOp_Prompt2(TrainerX):
         self.sched = build_lr_scheduler(self.optim, cfg.OPTIM)
         self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
 
-        self.scaler = GradScaler() if cfg.TRAINER.COCOOP_PROMPT2.PREC == "amp" else None
+        self.scaler = GradScaler() if cfg.TRAINER.COCOOP_PROMPT.PREC == "amp" else None
 
         # Note that multi-gpu training could be slow because CLIP's size is
         # big, which slows down the copy operation in DataParallel
@@ -444,7 +439,7 @@ class CoCoOp_Prompt2(TrainerX):
         optim = self.optim
         scaler = self.scaler
         
-        prec = self.cfg.TRAINER.COCOOP_PROMPT2.PREC
+        prec = self.cfg.TRAINER.COCOOP_PROMPT.PREC
         if prec == "amp":
             with autocast():
                 loss = model(image, label, superclass_label)

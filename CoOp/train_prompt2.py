@@ -99,11 +99,11 @@ def extend_cfg(cfg):
     cfg.TRAINER.COOP.PREC = "fp16"  # fp16, fp32, amp
     cfg.TRAINER.COOP.CLASS_TOKEN_POSITION = "end"  # 'middle' or 'end' or 'front'
 
-    cfg.TRAINER.COCOOP_PROMPT = CN()
-    cfg.TRAINER.COCOOP_PROMPT.N_CTX = 16  # number of context vectors
-    cfg.TRAINER.COCOOP_PROMPT.CTX_INIT = "a photo of"  # initialization words
-    cfg.TRAINER.COCOOP_PROMPT.CTX_MID = ", which is a"
-    cfg.TRAINER.COCOOP_PROMPT.PREC = "fp16"  # fp16, fp32, amp
+    cfg.TRAINER.COCOOP_PROMPT2 = CN()
+    cfg.TRAINER.COCOOP_PROMPT2.N_CTX = 16  # number of context vectors
+    cfg.TRAINER.COCOOP_PROMPT2.CTX_INIT = "a photo of"  # initialization words
+    cfg.TRAINER.COCOOP_PROMPT2.CTX_MID = ", which is a"
+    cfg.TRAINER.COCOOP_PROMPT2.PREC = "fp16"  # fp16, fp32, amp
 
     cfg.DATASET.SUBSAMPLE_CLASSES = "all"  # all, base or new
 
