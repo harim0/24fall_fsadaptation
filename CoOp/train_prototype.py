@@ -134,7 +134,7 @@ def main_worker(rank, world_size, args):
     cfg = setup_cfg(args)
     
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12323"
+    os.environ["MASTER_PORT"] = "15079"
     dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
     torch.cuda.set_device(rank)  
     

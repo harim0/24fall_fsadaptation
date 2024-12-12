@@ -16,8 +16,8 @@ CFG=vit_b16_c4_ep${EPOCH}_batch1_ctxv1_prompt2
 SHOTS=16
 
 
-DIR=output/base2new/train_base_e${EPOCH}/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
-# DIR=output/base2new/train_base/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
+DIR=output/all/train_all_e${EPOCH}/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
+# DIR=output/all/train_all/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
 if [ -d "$DIR" ]; then
     echo "Oops! The results exist at ${DIR} (so skip this job)"
 else
@@ -29,5 +29,5 @@ else
     --config-file configs/trainers/${TRAIN}/${CFG}.yaml \
     --output-dir ${DIR} \
     DATASET.NUM_SHOTS ${SHOTS} \
-    DATASET.SUBSAMPLE_CLASSES base 
+    DATASET.SUBSAMPLE_CLASSES all 
 fi

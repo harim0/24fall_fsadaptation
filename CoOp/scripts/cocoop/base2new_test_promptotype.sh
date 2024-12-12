@@ -4,29 +4,26 @@ cd ../..
 
 # custom config
 DATA=/home/harim/data/cocoop_dataset
-TRAINER=CoCoOp_Prototype
+TRAINER=CoCoOp_Promptotype
 TRAIN=CoCoOp
 
 DATASET=$1
 SEED=$2
-LOADEP=$3
 
-CFG=vit_b16_c4_ep${LOADEP}_batch1_ctxv1_prototype
-# CFG=vit_b16_ctxv1  # uncomment this when TRAINER=CoOp
 SHOTS=16
+LOADEP=$3
 SUB=new
+CFG=vit_b16_c4_ep${LOADEP}_batch1_ctxv1_promptotype
 
 
 COMMON_DIR=${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
 MODEL_DIR=output/base2new/train_base_e${LOADEP}/${COMMON_DIR}
 # MODEL_DIR=output/base2new/train_base/${COMMON_DIR}
-# MODEL_DIR=output/base2new/train_base/imagenet/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
-
 DIR=output/base2new/test_${SUB}_e${LOADEP}/${COMMON_DIR}
 if [ -d "$DIR" ]; then
     echo "Oops! The results exist at ${DIR} (so skip this job)"
 else
-    python train_prototype.py \
+    python train_promptotype.py \
     --root ${DATA} \
     --seed ${SEED} \
     --trainer ${TRAINER} \

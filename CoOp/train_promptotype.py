@@ -29,7 +29,7 @@ import datasets.imagenetv2
 import datasets.imagenet_a
 import datasets.imagenet_r
 
-import trainers.cocoop_prompt2
+import trainers.cocoop_promptotype
 import trainers.zsclip
 
 
@@ -99,11 +99,11 @@ def extend_cfg(cfg):
     cfg.TRAINER.COOP.PREC = "fp16"  # fp16, fp32, amp
     cfg.TRAINER.COOP.CLASS_TOKEN_POSITION = "end"  # 'middle' or 'end' or 'front'
 
-    cfg.TRAINER.COCOOP_PROMPT2 = CN()
-    cfg.TRAINER.COCOOP_PROMPT2.N_CTX = 16  # number of context vectors
-    cfg.TRAINER.COCOOP_PROMPT2.CTX_INIT = "a photo of"  # initialization words
-    cfg.TRAINER.COCOOP_PROMPT2.CTX_MID = ", which is a"
-    cfg.TRAINER.COCOOP_PROMPT2.PREC = "fp16"  # fp16, fp32, amp
+    cfg.TRAINER.COCOOP_PROMPTOTYPE = CN()
+    cfg.TRAINER.COCOOP_PROMPTOTYPE.N_CTX = 16  # number of context vectors
+    cfg.TRAINER.COCOOP_PROMPTOTYPE.CTX_INIT = "a photo of"  # initialization words
+    cfg.TRAINER.COCOOP_PROMPTOTYPE.CTX_MID = ", which is a"
+    cfg.TRAINER.COCOOP_PROMPTOTYPE.PREC = "fp16"  # fp16, fp32, amp
 
     cfg.DATASET.SUBSAMPLE_CLASSES = "all"  # all, base or new
 
@@ -136,7 +136,7 @@ def main_worker(rank, world_size, args):
     cfg = setup_cfg(args)
     
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12579"
+    os.environ["MASTER_PORT"] = "15589"
     dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
     torch.cuda.set_device(rank)  
     
